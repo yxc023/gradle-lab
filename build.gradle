@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    id 'idea'
+}
+import org.gradle.api.internal.tasks.options.Option;
+task createModule(type: CreateJavaModuleTask) {
+}
+class CreateJavaModuleTask extends DefaultTask {
+    String greeting = 'hello from GreetingTask'
+
+    private String templateData;
+
+    @Option(option = "ha", description = "")
+    public void getTemplateEngine(String haha) {
+        this.templateData = haha
+    }
+
+    String getTemplateData() {
+        return templateData
+    }
+
+    @TaskAction
+    def greet() {
+        project.mkdir(this.templateData)
+        System.in.read()
+        println greeting + templateData
+
+    }
+}
+
+group 'com.yangxiaochen.gradle'
+version '1.0.0-SNAPSHOT'
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile group: 'org.gradle', name: 'gradle-tooling-api', version: '4.0.1'
+    compile group: 'org.gradle', name: 'gradle-core', version: '4.0.1'
+    runtime group: 'org.gradle', name: 'gradle-logging', version: '4.0.1'
+    runtime group: 'org.gradle', name: 'gradle-base-services', version: '4.0.1'
+    runtime group: 'org.gradle', name: 'gradle-base-services-groovy', version: '4.0.1'
+    compile group: 'org.gradle', name: 'gradle-model-core', version: '4.0.1'
+
+
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.12'
+    compile 'org.slf4j:slf4j-api:1.7.24'
+    testCompile 'junit:junit:4.12'
+}
+
