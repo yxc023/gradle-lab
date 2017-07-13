@@ -42,6 +42,7 @@ class SourceSetCreateTask extends DefaultTask {
 
     @Inject
     public SourceSetCreateTask() {
+        setGroup("scaffold");
          // see http://gradle.1045684.n5.nabble.com/injecting-dependencies-into-task-instances-td5712637.html
     }
 }
