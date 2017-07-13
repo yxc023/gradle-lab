@@ -1,18 +1,18 @@
 
 
-buildscript {
-    repositories {
-        mavenLocal()
-    }
-    dependencies {
-        classpath "com.yangxiaochen.gradle:project-scaffold-java:1.0.0-SNAPSHOT"
-    }
-}
+ buildscript {
+     repositories {
+         mavenLocal()
+     }
+     dependencies {
+         classpath "com.yangxiaochen.gradle:project-scaffold-java:1.0.0-SNAPSHOT"
+     }
+ }
 plugins {
     id 'java'
     id 'idea'
 }
-apply plugin: "com.yangxiaochen.gradle"
+ apply plugin: "com.yangxiaochen.project-scaffold-java"
 
 
 import org.gradle.api.internal.tasks.options.Option;

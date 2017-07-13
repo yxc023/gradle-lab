@@ -1,9 +1,13 @@
 package com.yangxiaochen.gradle.plugin.scaffold.java;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.internal.reflect.Instantiator;
+
+import javax.inject.Inject;
 
 /**
  * @author yangxiaochen
@@ -12,7 +16,12 @@ import org.gradle.api.tasks.TaskAction;
 public class ProjectScaffoldJavaPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
-        project.getTasks().create("createSrc", SourceSetCreateTask.class);
+        project.getTasks().create("createSrc", SourceSetCreateTask.class, new Action<SourceSetCreateTask>() {
+            @Override
+            public void execute(SourceSetCreateTask sourceSetCreateTask) {
+
+            }
+        });
     }
 }
 
@@ -29,5 +38,10 @@ class SourceSetCreateTask extends DefaultTask {
         getProject().mkdir(mainResource);
         getProject().mkdir(testJava);
         getProject().mkdir(testResource);
+    }
+
+    @Inject
+    public SourceSetCreateTask() {
+         // see http://gradle.1045684.n5.nabble.com/injecting-dependencies-into-task-instances-td5712637.html
     }
 }
