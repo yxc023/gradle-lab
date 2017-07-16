@@ -1,23 +1,12 @@
-
-
- buildscript {
-     repositories {
-         mavenLocal()
-     }
-     dependencies {
-         classpath "com.yangxiaochen.gradle:project-scaffold-java:1.0.0-SNAPSHOT"
-     }
- }
 plugins {
     id 'java'
     id 'idea'
+    id "com.yangxiaochen.scaffold" version "1.0.2"
 }
- apply plugin: "com.yangxiaochen.scaffold"
 
 
 import org.gradle.api.internal.tasks.options.Option;
-task createModule(type: CreateJavaModuleTask) {
-}
+
 class CreateJavaModuleTask extends DefaultTask {
     String greeting = 'hello from GreetingTask'
 
