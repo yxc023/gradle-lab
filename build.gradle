@@ -12,7 +12,7 @@ plugins {
     id 'java'
     id 'idea'
 }
- apply plugin: "com.yangxiaochen.project-scaffold-java"
+ apply plugin: "com.yangxiaochen.scaffold"
 
 
 import org.gradle.api.internal.tasks.options.Option;
