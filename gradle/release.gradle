@@ -16,6 +16,12 @@ buildscript {
 
 task(release) {
     doLast {
+
+        def versionPattern = ~/\d+\.\d+\.\d+(-SNAPSHOT)?/
+
+//        println "1.0.0".matches(versionPattern)
+//        println "1.22.0-SNAPSHOT".matches(versionPattern)
+
         def grgit = Grgit.open()
         Status status = grgit.status()
         if (!status.clean) {
@@ -24,7 +30,7 @@ task(release) {
         }
 
 
-        println "version '1.0.0-SNAPSHOT'".matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/)
+//        println "version '1.0.0-SNAPSHOT'".matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/)
 
         def currentBranch = grgit.branch.current.name
         if (currentBranch == 'master') {
@@ -36,6 +42,7 @@ task(release) {
                 rename("build.gradle", "build.gradle.bak")
             }
             rootBuildFile.delete()
+            def version = ''
             copy {
                 from(rootBuildFileBak)
                 into(rootDir)
@@ -43,15 +50,28 @@ task(release) {
 
                 boolean findVersionAndProcessed
                 filter { String line ->
-                    if (line.matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/)) {
-                        return line[0..-11] + (line.indexOf("'") < 0 ? "\"" : "'")
+                    if (line.matches(~/ *version *=? *["|'].+["|']/)) {
+
+                        version = line.find(versionPattern)
+//                        println version
+
+                        if(line.matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/) ){
+                            return line[0..-11] + (line.indexOf("'") < 0 ? "\"" : "'")
+
+                        }
                     }
                     return line
                 }
             }
             rootBuildFileBak.delete()
 
-//            grgit.commit
+            grgit.add(patterns:['build.gradle'])
+            grgit.commit(message: "Release version ${version}.RELEASE")
+            grgit.tag.add(name: "v${version}.RELEASE", message: "Release version ${version}.RELEASE")
+
+            println "version ${version} release ok, run these cmd to publish release:"
+            println "git push origin master"
+            println "git push origin v${version}.RELEASE"
 
         }
 
