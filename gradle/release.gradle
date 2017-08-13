@@ -1,0 +1,59 @@
+import org.ajoberstar.grgit.Grgit
+import org.ajoberstar.grgit.Status
+
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.ajoberstar:grgit:1.7.2'
+    }
+}
+
+
+
+
+task(release) {
+    doLast {
+        def grgit = Grgit.open()
+        Status status = grgit.status()
+        if (!status.clean) {
+            println 'git status is not clean!'
+            return
+        }
+
+
+        println "version '1.0.0-SNAPSHOT'".matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/)
+
+        def currentBranch = grgit.branch.current.name
+        if (currentBranch == 'master') {
+            def rootBuildFile = file("$rootDir/build.gradle")
+            def rootBuildFileBak = file("$rootDir/build.gradle.bak")
+            copy {
+                from(rootBuildFile)
+                into(rootDir)
+                rename("build.gradle", "build.gradle.bak")
+            }
+            rootBuildFile.delete()
+            copy {
+                from(rootBuildFileBak)
+                into(rootDir)
+                rename("build.gradle.bak", "build.gradle")
+
+                boolean findVersionAndProcessed
+                filter { String line ->
+                    if (line.matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/)) {
+                        return line[0..-11] + (line.indexOf("'") < 0 ? "\"" : "'")
+                    }
+                    return line
+                }
+            }
+            rootBuildFileBak.delete()
+
+//            grgit.commit
+
+        }
+
+    }
+}

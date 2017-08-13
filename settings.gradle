@@ -17,3 +17,13 @@ include 'services:webservice'
 
 rootProject.name = 'gradle-lab'
 include 'project-scaffold-java'
+
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.ajoberstar:grgit:1.7.2'
+    }
+}

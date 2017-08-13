@@ -4,7 +4,6 @@ plugins {
     id "com.yangxiaochen.scaffold" version "1.0.2"
 }
 
-apply from: 'gradle/release.gradle'
 
 import org.gradle.api.internal.tasks.options.Option;
 
@@ -32,7 +31,7 @@ class CreateJavaModuleTask extends DefaultTask {
 }
 
 group 'com.yangxiaochen.gradle'
-version '1.0.0'
+version '1.0.0-SNAPSHOT'
 repositories {
     jcenter()
 }
@@ -40,7 +39,7 @@ repositories {
 task type: Copy, hello2
 task hello3(type: Copy)
 
-//hello4(type: Copy)
+hello4(type: Copy)
 
 println hello2
 println hello3
@@ -54,14 +53,9 @@ dependencies {
     compileOnly group: 'org.gradle', name: 'gradle-base-services', version: '4.0.1'
     compileOnly group: 'org.gradle', name: 'gradle-base-services-groovy', version: '4.0.1'
     compileOnly group: 'org.gradle', name: 'gradle-model-core', version: '4.0.1'
-    compile group: 'org.springframework.boot', name: 'spring-boot-gradle-plugin', version: '1.5.6.RELEASE'
-    compileOnly 'org.ajoberstar:grgit:1.7.2'
 
 
-    compile localGroovy()
-
-
-//    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.12'
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.12'
     compile 'org.slf4j:slf4j-api:1.7.24'
     testCompile gradleTestKit()
     testCompile 'junit:junit:4.12'
