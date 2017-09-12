@@ -32,7 +32,7 @@ class CreateJavaModuleTask extends DefaultTask {
 }
 
 group 'com.yangxiaochen.gradle'
-version '1.0.2'
+version '1.0.2-SNAPSHOT'
 repositories {
     jcenter()
 }
