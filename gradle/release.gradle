@@ -44,7 +44,7 @@ class ReleaseTask extends DefaultTask {
         }
 
         def version = null
-        copy {
+        project.copy {
             from(this.rootBuildFile)
             into(this.rootBuildFileTmp)
 
@@ -63,7 +63,7 @@ class ReleaseTask extends DefaultTask {
                 return line
             }
         }
-        copy {
+        project.copy {
             from(this.rootBuildFileTmp)
             into(this.rootBuildFile)
         }
