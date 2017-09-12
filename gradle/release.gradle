@@ -1,6 +1,7 @@
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.Status
 
+import java.util.regex.Pattern
 
 buildscript {
     repositories {
@@ -12,68 +13,140 @@ buildscript {
 }
 
 
+class ReleaseTask extends DefaultTask {
 
 
-task(release) {
-    doLast {
+    String releaseBranch;
+    Pattern versionPattern = ~/\d+\.\d+\.\d+(-SNAPSHOT)?/
 
-        def versionPattern = ~/\d+\.\d+\.\d+(-SNAPSHOT)?/
+    File rootBuildFile = project.file("$project.rootDir/build.gradle")
+    File rootBuildFileTmp = project.file("$project.rootDir/build.gradle.tmp")
 
-//        println "1.0.0".matches(versionPattern)
-//        println "1.22.0-SNAPSHOT".matches(versionPattern)
+    ReleaseTask() {
+        group = "release"
+        description = "release this project"
+    }
 
+    @TaskAction
+    def release() {
         def grgit = Grgit.open()
+
+        def currentBranch = grgit.branch.current.name
+        if (currentBranch != this.releaseBranch) {
+            println "release should be at ${this.releaseBranch}"
+            return
+        }
+
         Status status = grgit.status()
         if (!status.clean) {
             println 'git status is not clean!'
             return
         }
 
+        def version = null
+        copy {
+            from(this.rootBuildFile)
+            into(this.rootBuildFileTmp)
 
-//        println "version '1.0.0-SNAPSHOT'".matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/)
+            filter { String line ->
+                if (line.matches(~/ *version *=? *["|'].+["|']/)) {
 
-        def currentBranch = grgit.branch.current.name
-        if (currentBranch == 'master') {
-            def rootBuildFile = file("$rootDir/build.gradle")
-            def rootBuildFileBak = file("$rootDir/build.gradle.bak")
-            copy {
-                from(rootBuildFile)
-                into(rootDir)
-                rename("build.gradle", "build.gradle.bak")
-            }
-            rootBuildFile.delete()
-            def version = ''
-            copy {
-                from(rootBuildFileBak)
-                into(rootDir)
-                rename("build.gradle.bak", "build.gradle")
-
-                boolean findVersionAndProcessed
-                filter { String line ->
-                    if (line.matches(~/ *version *=? *["|'].+["|']/)) {
-
-                        version = line.find(versionPattern)
-//                        println version
-
-                        if(line.matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/) ){
-                            return line[0..-11] + (line.indexOf("'") < 0 ? "\"" : "'")
-
-                        }
+                    version = line.find(versionPattern)
+                    println "current version: $version"
+                    if (version != null) {
+                        return line.replace("-SNAPSHOT", "")
+                    } else {
+//                        println "version not match $versionPattern"
+                        throw new TaskExecutionException("version not match $versionPattern")
                     }
-                    return line
                 }
+                return line
             }
-            rootBuildFileBak.delete()
-
-            grgit.add(patterns:['build.gradle'])
-            grgit.commit(message: "Release version ${version}.RELEASE")
-            grgit.tag.add(name: "v${version}.RELEASE", message: "Release version ${version}.RELEASE")
-
-            println "version ${version} release ok, run these cmd to publish release:"
-            println "git push origin master"
-            println "git push origin v${version}.RELEASE"
-
         }
+        copy {
+            from(this.rootBuildFileTmp)
+            into(this.rootBuildFile)
+        }
+
+        grgit.add(patterns: ['build.gradle'])
+        grgit.commit(message: "Release version ${version}.RELEASE")
+        grgit.tag.add(name: "v${version}.RELEASE", message: "Release version ${version}.RELEASE")
+
+
+        println "version ${version} release ok, run these cmd to publish release:"
+        println "git push origin master"
+        println "git push origin v${version}.RELEASE"
+
 
     }
 }
+
+task(release, type: ReleaseTask) {
+    releaseBranch = "master"
+}
+
+//task(release) {
+//    doLast {
+//
+//        def versionPattern =
+//
+//        def grgit = Grgit.open()
+//
+//        def currentBranch = grgit.branch.current.name
+//        if (currentBranch != 'master') {
+//            println 'release should be at master'
+//            return
+//        }
+//
+//        Status status = grgit.status()
+//        if (!status.clean) {
+//            println 'git status is not clean!'
+//            return
+//        }
+//
+//
+//
+//
+//
+//        def rootBuildFile = file("$rootDir/build.gradle")
+//        def rootBuildFileBak = file("$rootDir/build.gradle.bak")
+//        copy {
+//            from(rootBuildFile)
+//            into(rootDir)
+//            rename("build.gradle", "build.gradle.bak")
+//        }
+//        rootBuildFile.delete()
+//        def version = ''
+//        copy {
+//            from(rootBuildFileBak)
+//            into(rootDir)
+//            rename("build.gradle.bak", "build.gradle")
+//
+////                boolean findVersionAndProcessed
+//            filter { String line ->
+//                if (line.matches(~/ *version *=? *["|'].+["|']/)) {
+//
+//                    version = line.find(versionPattern)
+////                        println version
+//
+//                    if (line.matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/)) {
+//                        return line[0..-11] + (line.indexOf("'") < 0 ? "\"" : "'")
+//
+//                    }
+//                }
+//                return line
+//            }
+//        }
+//        rootBuildFileBak.delete()
+//
+//        grgit.add(patterns: ['build.gradle'])
+//        grgit.commit(message: "Release version ${version}.RELEASE")
+//        grgit.tag.add(name: "v${version}.RELEASE", message: "Release version ${version}.RELEASE")
+//
+//        println "version ${version} release ok, run these cmd to publish release:"
+//        println "git push origin master"
+//        println "git push origin v${version}.RELEASE"
+//
+//
+//    }
+//}
