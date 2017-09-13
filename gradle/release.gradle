@@ -1,5 +1,7 @@
+import com.vdurmont.semver4j.Semver
 import org.ajoberstar.grgit.Grgit
 import org.ajoberstar.grgit.Status
+import org.ajoberstar.grgit.Tag
 
 import java.util.regex.Pattern
 
@@ -9,6 +11,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.ajoberstar:grgit:1.7.2'
+        classpath 'com.vdurmont:semver4j:2.0.3'
     }
 }
 
@@ -16,11 +19,11 @@ buildscript {
 class ReleaseTask extends DefaultTask {
 
 
-    String releaseBranch;
-    Pattern versionPattern = ~/\d+\.\d+\.\d+(-SNAPSHOT)?/
+    String releaseBranch
+    Pattern versionPattern = ~/\d+\.\d+\.\d+[\.\+0-9A-Za-z]*/
 
     File rootBuildFile = project.file("$project.rootDir/build.gradle")
-    File rootBuildFileTmp = project.file("$project.rootDir/build.gradle.tmp")
+    File rootBuildFileTmp = project.file("$project.buildDir/release/build.gradle.release")
 
     ReleaseTask() {
         group = "release"
@@ -40,113 +43,102 @@ class ReleaseTask extends DefaultTask {
         Status status = grgit.status()
         if (!status.clean) {
             println 'git status is not clean!'
-            return
+//            return
         }
 
+
         def version = null
+        def findVersion = false;
         project.copy {
             from(this.rootBuildFile)
-            into(this.rootBuildFileTmp)
+            into(this.rootBuildFileTmp.getParent())
+            rename(this.rootBuildFile.name, this.rootBuildFileTmp.name)
 
             filter { String line ->
                 if (line.matches(~/ *version *=? *["|'].+["|']/)) {
-
+                    findVersion = true
                     version = line.find(versionPattern)
-                    println "current version: $version"
+                    try {
+                        Semver semver = new Semver(version)
+                    } catch (Exception e) {
+
+                    }
                     if (version != null) {
-                        return line.replace("-SNAPSHOT", "")
+                        println "current version: $version"
+                        version = version.replace("-SNAPSHOT", "")
+                        line = line.replace("-SNAPSHOT", "")
+                        println "new version: $version"
+                        return line
                     } else {
-//                        println "version not match $versionPattern"
-                        throw new TaskExecutionException("version not match $versionPattern")
+                        println "version not match $versionPattern"
+                        return line
                     }
                 }
                 return line
             }
         }
-        project.copy {
-            from(this.rootBuildFileTmp)
-            into(this.rootBuildFile)
+        if (version == null) {
+            if (!findVersion) {
+                println "not find a version"
+            }
+            return
+        }
+
+
+
+        def tagVersion = "v${version}.RELEASE"
+        List<Tag> tags = grgit.tag.list()
+        Tag existTag = tags.find() { tag ->
+            tag.getName().equals(tagVersion)
+        }
+        if (existTag != null) {
+            pringln "tag $tagVersion has exists!"
         }
 
         grgit.add(patterns: ['build.gradle'])
         grgit.commit(message: "Release version ${version}.RELEASE")
-        grgit.tag.add(name: "v${version}.RELEASE", message: "Release version ${version}.RELEASE")
+        grgit.tag.add(name: tagVersion, message: "Release version ${version}.RELEASE")
 
+        project.copy {
+            from(this.rootBuildFileTmp)
+            into(project.rootDir)
+            rename(this.rootBuildFileTmp.name, this.rootBuildFile.name)
+        }
 
         println "version ${version} release ok, run these cmd to publish release:"
         println "git push origin master"
         println "git push origin v${version}.RELEASE"
 
+    }
+}
 
+
+class VersionChangeTask extends DefaultTask {
+
+    /**
+     * version = "xxx"
+     * or version "xxx"
+     * or version = 'xxx'
+     */
+    Pattern versionLinePattern = ~/ *version *=? *["|'].+["|']/
+
+    Action<String> doWithVersionLineAction
+
+    VersionChangeTask() {
+        group = "build"
+        description = "change the version this project"
+    }
+
+    @TaskAction
+    def versionChange() {
+        allprojects.each {
+            // find build.gradle
+            // copy to buildDir with doWithVersionLineAction
+            // copy back
+        }
     }
 }
 
 task(release, type: ReleaseTask) {
     releaseBranch = "master"
 }
-
-//task(release) {
-//    doLast {
-//
-//        def versionPattern =
-//
-//        def grgit = Grgit.open()
-//
-//        def currentBranch = grgit.branch.current.name
-//        if (currentBranch != 'master') {
-//            println 'release should be at master'
-//            return
-//        }
-//
-//        Status status = grgit.status()
-//        if (!status.clean) {
-//            println 'git status is not clean!'
-//            return
-//        }
-//
-//
-//
-//
-//
-//        def rootBuildFile = file("$rootDir/build.gradle")
-//        def rootBuildFileBak = file("$rootDir/build.gradle.bak")
-//        copy {
-//            from(rootBuildFile)
-//            into(rootDir)
-//            rename("build.gradle", "build.gradle.bak")
-//        }
-//        rootBuildFile.delete()
-//        def version = ''
-//        copy {
-//            from(rootBuildFileBak)
-//            into(rootDir)
-//            rename("build.gradle.bak", "build.gradle")
-//
-////                boolean findVersionAndProcessed
-//            filter { String line ->
-//                if (line.matches(~/ *version *=? *["|'].+["|']/)) {
-//
-//                    version = line.find(versionPattern)
-////                        println version
-//
-//                    if (line.matches(~/ *version *=? *["|'].+-SNAPSHOT["|']/)) {
-//                        return line[0..-11] + (line.indexOf("'") < 0 ? "\"" : "'")
-//
-//                    }
-//                }
-//                return line
-//            }
-//        }
-//        rootBuildFileBak.delete()
-//
-//        grgit.add(patterns: ['build.gradle'])
-//        grgit.commit(message: "Release version ${version}.RELEASE")
-//        grgit.tag.add(name: "v${version}.RELEASE", message: "Release version ${version}.RELEASE")
-//
-//        println "version ${version} release ok, run these cmd to publish release:"
-//        println "git push origin master"
-//        println "git push origin v${version}.RELEASE"
-//
-//
-//    }
-//}
